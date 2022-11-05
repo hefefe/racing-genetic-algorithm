@@ -116,8 +116,12 @@ while run:
     #lap counting
     poi = carr.collision(FINISH_MASK, *FINISH_POS)
     if poi != None:
-        if i == 0 and poi[0] == 0:
+        if i == 0 and poi[0] < 5:
             carr.add_point(1)
+            print(carr.points)
+            i += 1
+        elif i == 0 and poi[0] >60:
+            carr.add_point(-1)
             print(carr.points)
             i += 1
     if poi == None:
