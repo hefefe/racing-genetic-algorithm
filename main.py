@@ -7,7 +7,9 @@ TRACK_BORDER = resize(pygame.image.load("img/trasa_obrys.png"), 0.55, 0.55)
 TRACK = resize(pygame.image.load("img/trasa.png"), 0.55, 0.55)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 CAR = resize(pygame.image.load("img/autkoMINI.png"), 0.65, 0.65)
-FINISH = resize(pygame.image.load("img/meta.png"), 0.55, 0.55)
+FINISH = resize(pygame.image.load("img/meta.png"), 0.55, 0.56)
+FINISH_MASK = pygame.mask.from_surface(FINISH)
+FINISH_POS = (490, 572)
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AI")
@@ -28,6 +30,7 @@ class Car:
         self.angle = 0
         self.x, self.y = self.START_POS
         self.acceleration = 0.3
+        self.points = -1
 
     def rotate(self, left=False, right=False):
         if left:
@@ -61,17 +64,20 @@ class Car:
             self.vel = min(self.vel + self.acceleration / 2, 0)
             self.move()
 
-    def collision(self, mask):
+    def collision(self, mask, x=0,y=0):
         car_mask = pygame.mask.from_surface(self.img)
-        offset = (int(self.x), int(self.y))
+        offset = (int(self.x-x), int(self.y-y))
         overlap = mask.overlap(car_mask, offset)
         return overlap
+
+    def add_point(self,amount):
+        self.points += amount
 
 
 def draw(window, Car):
     window.blit(TRACK, (0, 0))
-    window.blit(FINISH, (0, 0))
     window.blit(TRACK_BORDER, (0, 0))
+    window.blit(FINISH, FINISH_POS)
     Car.draw(window)
     pygame.display.update()
 def movement():
@@ -81,7 +87,7 @@ def movement():
         carr.rotate(left=True)
     if keys[pygame.K_d]:
         carr.rotate(right=True)
-    if keys[pygame.K_w]:
+    if keys[pygame.K_w] and not keys[pygame.K_s]:
         moved = True
         carr.move_forward()
     if keys[pygame.K_s]:
@@ -89,12 +95,11 @@ def movement():
         carr.move_backwards()
     if not moved:
         carr.reduce_speed()
-
-
 run = True
 clock = pygame.time.Clock()
 carr = Car(12, 7)
 
+i=0
 while run:
     clock.tick(FPS)
     draw(WINDOW, carr)
@@ -107,4 +112,14 @@ while run:
 
     if carr.collision(TRACK_BORDER_MASK) != None:
         print("kolizja")
+
+    #lap counting
+    poi = carr.collision(FINISH_MASK, *FINISH_POS)
+    if poi != None:
+        if i == 0 and poi[0] == 0:
+            carr.add_point(1)
+            print(carr.points)
+            i += 1
+    if poi == None:
+        i=0
 pygame.quit()
