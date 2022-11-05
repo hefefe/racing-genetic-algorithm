@@ -5,9 +5,9 @@ from utils import resize, rotate_center
 
 TRACK_BORDER = resize(pygame.image.load("img/trasa_obrys.png"), 0.55, 0.55)
 TRACK = resize(pygame.image.load("img/trasa.png"), 0.55, 0.55)
-CAR = resize(pygame.image.load("img/autkoMINI.png"), 0.75, 0.75)
-FINISH = pygame.image.load("img/meta.png")
-
+TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
+CAR = resize(pygame.image.load("img/autkoMINI.png"), 0.65, 0.65)
+FINISH = resize(pygame.image.load("img/meta.png"), 0.55, 0.55)
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AI")
@@ -17,7 +17,7 @@ FPS = 60
 
 class Car:
     IMG = CAR
-    START_POS = (300, 100)
+    START_POS = (410, 605)
 
     def __init__(self, max_vel, rotation_vel):
 
@@ -43,7 +43,7 @@ class Car:
         self.move()
 
     def move_backwards(self):
-        self.vel = max(self.vel - self.acceleration, -1 * self.max_vel/2)
+        self.vel = max(self.vel - self.acceleration, -1 * self.max_vel / 2)
         self.move()
 
     def move(self):
@@ -54,35 +54,27 @@ class Car:
         self.x -= horizontal
 
     def reduce_speed(self):
-        if self.vel>0:
+        if self.vel > 0:
             self.vel = max(self.vel - self.acceleration / 2, 0)
             self.move()
         else:
             self.vel = min(self.vel + self.acceleration / 2, 0)
             self.move()
 
+    def collision(self, mask):
+        car_mask = pygame.mask.from_surface(self.img)
+        offset = (int(self.x), int(self.y))
+        overlap = mask.overlap(car_mask, offset)
+        return overlap
+
 
 def draw(window, Car):
     window.blit(TRACK, (0, 0))
-    window.blit(TRACK_BORDER, (0, 0))
     window.blit(FINISH, (0, 0))
+    window.blit(TRACK_BORDER, (0, 0))
     Car.draw(window)
     pygame.display.update()
-
-
-run = True
-clock = pygame.time.Clock()
-carr = Car(12, 7)
-
-while run:
-    clock.tick(FPS)
-    draw(WINDOW, carr)
-    pygame.display.update()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-            break
-
+def movement():
     keys = pygame.key.get_pressed()
     moved = False
     if keys[pygame.K_a]:
@@ -97,4 +89,22 @@ while run:
         carr.move_backwards()
     if not moved:
         carr.reduce_speed()
+
+
+run = True
+clock = pygame.time.Clock()
+carr = Car(12, 7)
+
+while run:
+    clock.tick(FPS)
+    draw(WINDOW, carr)
+    pygame.display.update()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+            break
+    movement()
+
+    if carr.collision(TRACK_BORDER_MASK) != None:
+        print("kolizja")
 pygame.quit()
