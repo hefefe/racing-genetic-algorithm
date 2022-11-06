@@ -52,11 +52,11 @@ class Car:
         self.move()
 
     def move(self):
-        radians = math.radians(self.angle - 90)
-        vertical = math.cos(radians) * self.vel
-        horizontal = math.sin(radians) * self.vel
+        radians = math.radians(self.angle)
+        horizontal = math.cos(radians) * self.vel
+        vertical = math.sin(radians) * self.vel
         self.y -= vertical
-        self.x -= horizontal
+        self.x += horizontal
 
     def reduce_speed(self):
         if self.vel > 0:
