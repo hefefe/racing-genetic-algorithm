@@ -60,10 +60,10 @@ class Car:
 
     def reduce_speed(self):
         if self.vel > 0:
-            self.vel = max(self.vel - self.acceleration / 2, 0)
+            self.vel = self.vel - self.acceleration / 2
             self.move()
         else:
-            self.vel = min(self.vel + self.acceleration / 2, 0)
+            self.vel = self.vel + self.acceleration / 2
             self.move()
 
     def collision(self, mask, x=0, y=0):
