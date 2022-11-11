@@ -1,7 +1,8 @@
 import pygame
 import time
 import math
-from utils import resize, rotate_center
+
+from Utils import resize, rotate_center
 
 TRACK_BORDER = resize(pygame.image.load("img/trasa_obrys.png"), 0.55, 0.55)
 TRACK = resize(pygame.image.load("img/trasa.png"), 0.55, 0.55)
@@ -17,14 +18,15 @@ WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AI")
 
-FPS = 60
+FPS = 100
 
 
-class Car:
+class Car(pygame.sprite.Sprite):
     START_POS = (410, 605)
 
     def __init__(self):
 
+        super().__init__()
         self.img = CAR
         self.max_vel = 12
         self.vel = 0
@@ -33,6 +35,7 @@ class Car:
         self.x, self.y = self.START_POS
         self.acceleration = 0.3
         self.points = -1
+        self.rect = self.img.get_rect()
 
     def rotate(self, left=False, right=False):
         if left:
@@ -42,6 +45,9 @@ class Car:
 
     def draw(self, window):
         rotate_center(window, self.img, (self.x, self.y), self.angle)
+        self.radar()
+        for angel in (-90, -60, -30, 0, 30, 60, 90):
+            rotate_center(WINDOW, self.radarr, (self.x-self.radarr.get_width()/2+self.img.get_width()/2, self.y-self.radarr.get_height()/2+self.img.get_height()/2), angel+self.angle)
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration, self.max_vel)
@@ -75,8 +81,33 @@ class Car:
     def add_point(self, amount):
         self.points += amount
 
+    def movement(self):
+        keys = pygame.key.get_pressed()
+        moved = False
+        if keys[pygame.K_a]:
+            self.rotate(left=True)
+        if keys[pygame.K_d]:
+            self.rotate(right=True)
+        if keys[pygame.K_w] and not keys[pygame.K_s]:
+            moved = True
+            self.move_forward()
+        if keys[pygame.K_s]:
+            moved = True
+            self.move_backwards()
+        if not moved:
+            self.reduce_speed()
+
+    def radar(self):
+        self.radarr = pygame.Surface((300, 2))
+        self.radarr.set_colorkey((0, 0, 0))
+        pygame.draw.line(self.radarr, (255, 0, 0), self.radarr.get_rect().center, (300, 1), 1)
+        self.radarr_rect = self.radarr.get_rect()
+        self.radarr_mask = pygame.mask.from_surface(self.radarr)
+
+
 
 def draw(window, car):
+
     window.blit(TRACK, (0, 0))
     window.blit(TRACK_BORDER, (0, 0))
     window.blit(FINISH, FINISH_POS)
@@ -84,28 +115,10 @@ def draw(window, car):
     pygame.display.update()
 
 
-def movement():
-    keys = pygame.key.get_pressed()
-    moved = False
-    if keys[pygame.K_a]:
-        carr.rotate(left=True)
-    if keys[pygame.K_d]:
-        carr.rotate(right=True)
-    if keys[pygame.K_w] and not keys[pygame.K_s]:
-        moved = True
-        carr.move_forward()
-    if keys[pygame.K_s]:
-        moved = True
-        carr.move_backwards()
-    if not moved:
-        carr.reduce_speed()
-
-
 run = True
 clock = pygame.time.Clock()
 carr = Car()
-
-i = 0
+i = True
 while run:
     clock.tick(FPS)
     draw(WINDOW, carr)
@@ -114,21 +127,21 @@ while run:
         if event.type == pygame.QUIT:
             run = False
             break
-    movement()
+    carr.movement()
 
     if carr.collision(TRACK_BORDER_MASK) is not None:
         print("kolizja")
 
     poi = carr.collision(FINISH_MASK, *FINISH_POS)
     if poi is not None:
-        if i == 0 and poi[0] < 5:
+        if i is True and poi[0] < 5:
             carr.add_point(1)
             print(carr.points)
-            i += 1
-        elif i == 0 and poi[0] > 60:
+            i = False
+        elif i is True and poi[0] > 60:
             carr.add_point(-1)
             print(carr.points)
-            i += 1
+            i = False
     if poi is None:
-        i = 0
+        i = True
 pygame.quit()
