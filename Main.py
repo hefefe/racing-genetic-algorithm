@@ -35,7 +35,7 @@ class Car(pygame.sprite.Sprite):
         self.x, self.y = self.START_POS
         self.acceleration = 0.3
         self.points = -1
-        self.rect = self.img.get_rect()
+        self.rect = self.img.get_rect(topleft=(self.x,self.y))
 
     def rotate(self, left=False, right=False):
         if left:
@@ -44,10 +44,8 @@ class Car(pygame.sprite.Sprite):
             self.angle -= self.rotation_vel
 
     def draw(self, window):
-        rotate_center(window, self.img, (self.x, self.y), self.angle)
-        self.radar()
-        for angel in (-90, -60, -30, 0, 30, 60, 90):
-            rotate_center(WINDOW, self.radarr, (self.x-self.radarr.get_width()/2+self.img.get_width()/2, self.y-self.radarr.get_height()/2+self.img.get_height()/2), angel+self.angle)
+        self.new_rect = rotate_center(window, self.img, (self.x, self.y), self.angle)
+        self.more_radars()
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration, self.max_vel)
@@ -97,13 +95,26 @@ class Car(pygame.sprite.Sprite):
         if not moved:
             self.reduce_speed()
 
-    def radar(self):
-        self.radarr = pygame.Surface((300, 2))
-        self.radarr.set_colorkey((0, 0, 0))
-        pygame.draw.line(self.radarr, (255, 0, 0), self.radarr.get_rect().center, (300, 1), 1)
-        self.radarr_rect = self.radarr.get_rect()
-        self.radarr_mask = pygame.mask.from_surface(self.radarr)
+    def radar(self, radar_angle):
+        length = 0
+        x = int(self.new_rect.center[0])
+        y = int(self.new_rect.center[1])
 
+        try:
+            while not WINDOW.get_at((x, y)) == pygame.Color(255, 0, 0, 255) and length < 150:
+                length += 1
+                x = int(self.new_rect.center[0] + math.cos(math.radians(self.angle + radar_angle)) * length)
+                y = int(self.new_rect.center[1] - math.sin(math.radians(self.angle + radar_angle)) * length)
+        except:
+            print("")
+        # Draw Radar
+        pygame.draw.line(WINDOW, (255, 255, 255, 255), self.new_rect.center, (x, y), 1)
+        pygame.draw.circle(WINDOW, (0, 255, 0, 0), (x, y), 3)
+
+        return self.angle + radar_angle, length
+
+    def more_radars(self):
+        self.radars = [self.radar(-90), self.radar(-60), self.radar(-30), self.radar(0), self.radar(30), self.radar(60), self.radar(90)]
 
 
 def draw(window, car):
