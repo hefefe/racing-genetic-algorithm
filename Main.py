@@ -34,7 +34,7 @@ class Car(pygame.sprite.Sprite):
         self.img = CAR
         self.max_vel = 12
         self.vel = 0
-        self.rotation_vel = 7
+        self.rotation_vel = 4
         self.angle = 0
         self.x, self.y = self.START_POS
         self.acceleration = 0.3
@@ -49,11 +49,11 @@ class Car(pygame.sprite.Sprite):
         self.random_weights()
         self.car_alive = True
 
-    def rotate(self,left=False,right=False):
-        if left:
-            self.angle += (self.rotation_vel*self.out_sums[2])*self.multiplier
-        elif right:
-            self.angle -= (self.rotation_vel*self.out_sums[3])*self.multiplier
+    def rotate(self):
+        # if left:
+            self.angle += self.rotation_vel*self.out_sums[1]*self.multiplier
+        # elif right:
+            self.angle -= self.rotation_vel*self.out_sums[2]*self.multiplier
 
     def draw(self, window):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
@@ -63,9 +63,9 @@ class Car(pygame.sprite.Sprite):
         self.vel = min(self.vel + self.acceleration*self.out_sums[0], self.max_vel)*self.multiplier
         self.move()
 
-    def move_backwards(self):
-        self.vel = max(self.vel - self.acceleration*self.out_sums[1], -1 * self.max_vel / 2)*self.multiplier
-        self.move()
+    # def move_backwards(self):
+    #     self.vel = max(self.vel - self.acceleration*self.out_sums[1], -1 * self.max_vel / 2)*self.multiplier
+    #     self.move()
 
     def move(self):
         radians = math.radians(self.angle)
@@ -92,16 +92,16 @@ class Car(pygame.sprite.Sprite):
         self.points += amount
 
     def movement(self):
-        moved = False
-        if self.out_sums[1]==1:
-            self.rotate(left=True)
-        if self.out_sums[2]==1:
-            self.rotate(right=True)
-        if self.out_sums[0]==1:
-            moved = True
+        # moved = False
+        # if self.out_sums[1]==1:
+            self.rotate()
+        # if self.out_sums[2]==1:
+            self.rotate()
+        # if self.out_sums[0]==1:
+        #     moved = True
             self.move_forward()
-        else:
-            self.reduce_speed()
+        # else:
+        #     self.reduce_speed()
     def stop(self):
         self.multiplier = 0
         self.car_alive = False
@@ -119,7 +119,7 @@ class Car(pygame.sprite.Sprite):
             print("")
         # pygame.draw.line(WINDOW, (255, 255, 255, 255), self.new_rect.center, (x, y), 1)
         # if wrong, change to unimodal sigmoidal function
-        return -1 * (length - 150) / 100
+        return length
 
     def more_radars(self):
         self.radars = [self.radar(-90), self.radar(-60), self.radar(-30), self.radar(0), self.radar(30), self.radar(60),
@@ -159,11 +159,11 @@ class Car(pygame.sprite.Sprite):
             self.out_sums[i] += self.out_weights[i][0]
             for j in range(self.out_number):
                 self.out_sums[i] += self.hidden_sums[j]*self.out_weights[i][j+1]
-            # self.out_sums[i] = 1/(1+math.exp(-self.out_sums[i]))
-            if self.out_sums[i]>0:
-                self.out_sums[i] = 1
-            else:
-                self.out_sums[i] = 0
+            self.out_sums[i] = 1/(1+math.exp(-self.out_sums[i]))
+            # if self.out_sums[i]>0:
+            #     self.out_sums[i] = 1
+            # else:
+            #     self.out_sums[i] = 0
 
 
 def draw(window):
