@@ -44,7 +44,7 @@ class Car(pygame.sprite.Sprite):
             self.angle -= self.rotation_vel
 
     def draw(self, window):
-        self.new_rect = rotate_center(window, self.img, (self.x, self.y), self.angle)
+        self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
         self.more_radars()
 
     def move_forward(self):
@@ -71,8 +71,8 @@ class Car(pygame.sprite.Sprite):
             self.move()
 
     def collision(self, mask, x=0, y=0):
-        car_mask = pygame.mask.from_surface(self.img)
-        offset = (int(self.x - x), int(self.y - y))
+        car_mask = pygame.mask.from_surface(self.rotated_image)
+        offset = (int(self.new_rect.x - x), int(self.new_rect.y - y))
         overlap = mask.overlap(car_mask, offset)
         return overlap
 
