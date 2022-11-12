@@ -119,7 +119,7 @@ class Car(pygame.sprite.Sprite):
             print("")
         # pygame.draw.line(WINDOW, (255, 255, 255, 255), self.new_rect.center, (x, y), 1)
         # if wrong, change to unimodal sigmoidal function
-        return length
+        return (150-length)
 
     def more_radars(self):
         self.radars = [self.radar(-90), self.radar(-60), self.radar(-30), self.radar(0), self.radar(30), self.radar(60),
