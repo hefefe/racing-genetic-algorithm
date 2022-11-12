@@ -43,7 +43,7 @@ class Car(pygame.sprite.Sprite):
         self.multiplier = 1
         self.base_number = 7
         self.hidden_number = 6
-        self.out_number = 4
+        self.out_number = 3
 
         self.brain()
         self.random_weights()
@@ -93,16 +93,13 @@ class Car(pygame.sprite.Sprite):
 
     def movement(self):
         moved = False
-        if self.out_sums[2]==1:
+        if self.out_sums[1]==1:
             self.rotate(left=True)
-        if self.out_sums[3]==1:
+        if self.out_sums[2]==1:
             self.rotate(right=True)
         if self.out_sums[0]==1:
             moved = True
             self.move_forward()
-        elif self.out_sums[1]==1:
-            moved = True
-            self.move_backwards()
         else:
             self.reduce_speed()
     def stop(self):
@@ -120,7 +117,7 @@ class Car(pygame.sprite.Sprite):
                 y = int(self.new_rect.center[1] - math.sin(math.radians(self.angle + radar_angle)) * length)
         except:
             print("")
-        pygame.draw.line(WINDOW, (255, 255, 255, 255), self.new_rect.center, (x, y), 1)
+        # pygame.draw.line(WINDOW, (255, 255, 255, 255), self.new_rect.center, (x, y), 1)
         # if wrong, change to unimodal sigmoidal function
         return -1 * (length - 150) / 100
 
@@ -178,7 +175,7 @@ def draw(window):
 run = True
 clock = pygame.time.Clock()
 cars = []
-for i in range(10):
+for i in range(30):
     car = Car()
     cars.append(car)
 i = True
