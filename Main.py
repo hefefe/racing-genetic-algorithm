@@ -65,7 +65,7 @@ class Car(pygame.sprite.Sprite):
         self.more_radars()
         self.feedforward()
         self.time_alive += 1/10 * self.multiplier
-        if self.time_alive > 60:
+        if self.time_alive > 300:
             self.stop()
 
     def move_forward(self):
@@ -270,7 +270,7 @@ while run:
             cars.clear()
             for i in range(cars_amount):
                 car = Car(base, hidden, out)
-                car.mutate(0.5)
+                car.mutate(0.2)
                 cars.append(car)
     deads = 0
     best_fitness = 0
