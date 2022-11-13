@@ -64,7 +64,7 @@ class Car(pygame.sprite.Sprite):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
         self.more_radars()
         self.feedforward()
-        self.time_alive += 1/10
+        self.time_alive += 1/10 * self.multiplier
         if self.time_alive > 60:
             self.stop()
 
@@ -136,7 +136,7 @@ class Car(pygame.sprite.Sprite):
         self.time_alive = 0
         return fitness_score
 
-    def set_weights(self,base,hidden,out):
+    def set_weights(self, base, hidden, out):
 
         for i in range(self.base_number):
             for j in range(self.base_number+1):
@@ -217,7 +217,7 @@ def draw(window):
 run = True
 clock = pygame.time.Clock()
 cars = []
-cars_amount = 30
+cars_amount = 10
 deads = 0
 best_fitness = 0
 base = numpy.zeros((7, 8))
@@ -227,7 +227,7 @@ for i in range(cars_amount):
     car = Car()
     cars.append(car)
 
-i = True
+i = 0
 while run:
     clock.tick(FPS)
     draw(WINDOW)
@@ -239,18 +239,19 @@ while run:
     for car in cars:
         car.movement()
         car.draw(WINDOW)
-        # poi = car.collision(FINISH_MASK, *FINISH_POS)
-        # if poi is not None:
-        #     if i is True and poi[0] < 5:
-        #         car.add_point(1)
-        #         print(car.points)
-        #         i = False
-        #     elif i is True and poi[0] > 60:
-        #         car.add_point(-1)
-        #         print(car.points)
-        #         i = False
-        # if poi is None:
-        #     i = True
+        #TODO: adding points f-d up (should be in car class)
+        poi = car.collision(FINISH_MASK, *FINISH_POS)
+        if poi is not None:
+            if i ==0 and poi[0] < 10:
+                car.add_point(1)
+                print(car.points)
+                i += 1
+            elif i==0 and poi[0] > 40:
+                car.add_point(-1)
+                print(car.points)
+                i += 1
+        if poi is None:
+            i = 0
         if car.collision(TRACK_BORDER_MASK) is not None:
             car.stop()
     pygame.display.update()
@@ -262,13 +263,14 @@ while run:
             deads+=1
         if deads == cars_amount:
             for car in cars:
-                if best_fitness < car.fitness():
-                    best_fitness = car.fitness()
+                fitness = car.fitness()
+                if fitness >= best_fitness:
+                    best_fitness = fitness
                     base, hidden, out = car.get_weights()
             cars.clear()
             for i in range(cars_amount):
                 car = Car(base, hidden, out)
-                car.mutate(0.3)
+                car.mutate(0.5)
                 cars.append(car)
     deads = 0
     best_fitness = 0
