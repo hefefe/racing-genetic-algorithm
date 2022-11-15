@@ -14,7 +14,6 @@ TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 CAR = resize(pygame.image.load("img/autkoMINI.png"), 0.65, 0.65)
 
 FINISH = resize(pygame.image.load("img/meta.png"), 0.45, 0.49)
-# FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POS = (490, 580)
 
 CHECKPOINTS = resize(pygame.image.load("img/linie.png"), 0.55, 0.55)
@@ -32,6 +31,7 @@ class Car(pygame.sprite.Sprite):
 
     def __init__(self,base = numpy.zeros((7,8)),hidden = numpy.zeros((5,8)),out = numpy.zeros((3,6))):
         super().__init__()
+        self.ticks = 0
         self.radars = None
         self.new_rect = None
         self.rotated_image = None
@@ -67,14 +67,15 @@ class Car(pygame.sprite.Sprite):
     def draw(self, window):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
         self.more_radars()
+        self.movement()
         self.feedforward()
         self.time_alive += 1/10 * (self.vel/4) * self.multiplier
-        if self.time_alive > 300 or car.collision(TRACK_BORDER_MASK) is not None:
+        self.ticks += 1/10
+        if self.ticks > 300 or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
         if self.collision(CHECKPOINTS_MASK, 0,0) is not None:
             if self.i==True:
                 self.add_point(1)
-                print(self.points)
                 self.i=False
         else:
             self.i=True
@@ -235,25 +236,20 @@ base = numpy.zeros((7, 8))
 hidden = numpy.zeros((5, 8))
 out = numpy.zeros((3, 6))
 for i in range(cars_amount):
-    car = Car()
-    cars.append(car)
+    cars.append(Car())
 
 i = True
 while run:
     clock.tick(FPS)
     draw(WINDOW)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
             break
 
     for car in cars:
-        car.movement()
         car.draw(WINDOW)
-    pygame.display.update()
-
-    # TODO: sprawdzić poprawność przydzielanych wag
-    for car in cars:
         car_alive = car.get_alive()
         if not car.get_alive():
             deads+=1
@@ -270,7 +266,5 @@ while run:
                 cars.append(car)
     deads = 0
     best_fitness = 0
-    base = numpy.zeros((7, 8))
-    hidden= numpy.zeros((5, 8))
-    out = numpy.zeros((3, 6))
+    pygame.display.update()
 pygame.quit()
