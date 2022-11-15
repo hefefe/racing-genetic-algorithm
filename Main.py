@@ -14,8 +14,11 @@ TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 CAR = resize(pygame.image.load("img/autkoMINI.png"), 0.65, 0.65)
 
 FINISH = resize(pygame.image.load("img/meta.png"), 0.45, 0.49)
-FINISH_MASK = pygame.mask.from_surface(FINISH)
+# FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POS = (490, 580)
+
+CHECKPOINTS = resize(pygame.image.load("img/linie.png"), 0.55, 0.55)
+CHECKPOINTS_MASK = pygame.mask.from_surface(CHECKPOINTS)
 
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -46,6 +49,7 @@ class Car(pygame.sprite.Sprite):
         self.hidden_number = 5
         self.out_number = 3
         self.time_alive = 0
+        self.i = True
 
         self.brain()
         if numpy.all((base == 0)):
@@ -64,9 +68,16 @@ class Car(pygame.sprite.Sprite):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
         self.more_radars()
         self.feedforward()
-        self.time_alive += 1/10 * self.multiplier
-        if self.time_alive > 300:
+        self.time_alive += 1/10 * (self.vel/4) * self.multiplier
+        if self.time_alive > 300 or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
+        if self.collision(CHECKPOINTS_MASK, 0,0) is not None:
+            if self.i==True:
+                self.add_point(1)
+                print(self.points)
+                self.i=False
+        else:
+            self.i=True
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration * self.out_outputs[0], self.max_vel) * self.multiplier
@@ -98,7 +109,7 @@ class Car(pygame.sprite.Sprite):
         return overlap
 
     def add_point(self, amount):
-        self.points += amount
+        self.points += amount * self.multiplier
 
     def movement(self):
             self.rotate()
@@ -133,7 +144,6 @@ class Car(pygame.sprite.Sprite):
 
     def fitness(self):
         fitness_score = self.points*10 + self.time_alive
-        self.time_alive = 0
         return fitness_score
 
     def set_weights(self, base, hidden, out):
@@ -210,14 +220,15 @@ class Car(pygame.sprite.Sprite):
 
 
 def draw(window):
+    window.blit(CHECKPOINTS,(0,0))
     window.blit(TRACK, (0, 0))
-    window.blit(TRACK_BORDER, (0, 0))
     window.blit(FINISH, FINISH_POS)
+    window.blit(TRACK_BORDER, (0, 0))
 
 run = True
 clock = pygame.time.Clock()
 cars = []
-cars_amount = 10
+cars_amount = 20
 deads = 0
 best_fitness = 0
 base = numpy.zeros((7, 8))
@@ -227,7 +238,7 @@ for i in range(cars_amount):
     car = Car()
     cars.append(car)
 
-i = 0
+i = True
 while run:
     clock.tick(FPS)
     draw(WINDOW)
@@ -239,21 +250,6 @@ while run:
     for car in cars:
         car.movement()
         car.draw(WINDOW)
-        #TODO: adding points f-d up (should be in car class)
-        poi = car.collision(FINISH_MASK, *FINISH_POS)
-        if poi is not None:
-            if i ==0 and poi[0] < 10:
-                car.add_point(1)
-                print(car.points)
-                i += 1
-            elif i==0 and poi[0] > 40:
-                car.add_point(-1)
-                print(car.points)
-                i += 1
-        if poi is None:
-            i = 0
-        if car.collision(TRACK_BORDER_MASK) is not None:
-            car.stop()
     pygame.display.update()
 
     # TODO: sprawdzić poprawność przydzielanych wag
