@@ -58,18 +58,12 @@ class Car(pygame.sprite.Sprite):
             self.set_weights(base, hidden, out)
         self.car_alive = True
 
-    def rotate(self):
-        # if left:
-            self.angle += self.rotation_vel * self.out_outputs[1] * self.multiplier
-        # elif right:
-            self.angle -= self.rotation_vel * self.out_outputs[2] * self.multiplier
-
     def draw(self, window):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
         self.more_radars()
         self.movement()
         self.feedforward()
-        self.time_alive += 1/10 * (self.vel/4) * self.multiplier
+        self.time_alive += 1/10 * self.out_outputs[0] * self.multiplier
         self.ticks += 1/10
         if self.ticks > 300 or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
@@ -79,6 +73,12 @@ class Car(pygame.sprite.Sprite):
                 self.i=False
         else:
             self.i=True
+
+    def rotate(self):
+        # if left:
+            self.angle += self.rotation_vel * self.out_outputs[1] * self.multiplier
+        # elif right:
+            self.angle -= self.rotation_vel * self.out_outputs[2] * self.multiplier
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration * self.out_outputs[0], self.max_vel) * self.multiplier
@@ -113,7 +113,6 @@ class Car(pygame.sprite.Sprite):
         self.points += amount * self.multiplier
 
     def movement(self):
-            self.rotate()
             self.rotate()
             self.move_forward()
 
@@ -229,7 +228,7 @@ def draw(window):
 run = True
 clock = pygame.time.Clock()
 cars = []
-cars_amount = 20
+cars_amount = 10
 deads = 0
 best_fitness = 0
 base = numpy.zeros((7, 8))
