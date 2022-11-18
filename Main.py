@@ -25,11 +25,19 @@ pygame.display.set_caption("AI")
 
 FPS = 60
 
-
+cars_amount = 20
+base_number = 7
+hidden_number = 5
+out_number = 3
+weights_amount = base_number*(base_number+1)+hidden_number*(base_number+1)+out_number*(hidden_number+1)
+cross_probability = 0.7
+mutation_probability = 1/weights_amount * 2
+gene_min_value = -5
+gene_max_value = 5
 class Car(pygame.sprite.Sprite):
-    START_POS = (570, 605)
+    START_POS = (490, 620)
 
-    def __init__(self,base = numpy.zeros((7,8)),hidden = numpy.zeros((5,8)),out = numpy.zeros((3,6))):
+    def __init__(self):
         super().__init__()
         self.ticks = 0
         self.radars = None
@@ -45,17 +53,13 @@ class Car(pygame.sprite.Sprite):
         self.points = 0
         self.rect = self.img.get_rect(topleft=(self.x, self.y))
         self.multiplier = 1
-        self.base_number = 7
-        self.hidden_number = 5
-        self.out_number = 3
+        self.base_number = base_number
+        self.hidden_number = hidden_number
+        self.out_number = out_number
         self.time_alive = 0
         self.i = True
-
         self.brain()
-        if numpy.all((base == 0)):
-            self.random_weights()
-        else:
-            self.set_weights(base, hidden, out)
+        self.random_weights()
         self.car_alive = True
 
     def draw(self, window):
@@ -63,9 +67,9 @@ class Car(pygame.sprite.Sprite):
         self.more_radars()
         self.movement()
         self.feedforward()
-        self.time_alive += 1/10 * self.out_outputs[0] * self.multiplier
+        self.time_alive +=  self.vel * 0 * self.multiplier
         self.ticks += 1/10
-        if self.ticks > 300 or car.collision(TRACK_BORDER_MASK) is not None:
+        if self.ticks > 60 or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
         if self.collision(CHECKPOINTS_MASK, 0,0) is not None:
             if self.i==True:
@@ -73,7 +77,6 @@ class Car(pygame.sprite.Sprite):
                 self.i=False
         else:
             self.i=True
-
     def rotate(self):
         # if left:
             self.angle += self.rotation_vel * self.out_outputs[1] * self.multiplier
@@ -143,7 +146,7 @@ class Car(pygame.sprite.Sprite):
                        self.radar(90)]
 
     def fitness(self):
-        fitness_score = self.points*10 + self.time_alive
+        fitness_score = self.points + self.time_alive
         return fitness_score
 
     def set_weights(self, base, hidden, out):
@@ -159,21 +162,31 @@ class Car(pygame.sprite.Sprite):
                 self.out_weights[i][j] = out[i][j]
 
     def get_weights(self):
-        return self.base_weights, self.hidden_weights, self.out_weights
-
-    def mutate(self, mutation_rate):
+        weights=[]
         for i in range(self.base_number):
             for j in range(self.base_number+1):
-                if random.random() <= mutation_rate:
-                    self.base_weights[i][j] = self.base_weights[i][j]+(2*random.random() -1)
+                weights.append(self.base_weights[i][j])
         for i in range(self.hidden_number):
             for j in range(self.base_number+1):
-                if random.random() <= mutation_rate:
-                    self.hidden_weights[i][j] = self.hidden_weights[i][j]+(2*random.random() -1)
+                weights.append(self.hidden_weights[i][j])
         for i in range(self.out_number):
             for j in range(self.hidden_number+1):
-                if random.random() <= mutation_rate:
-                    self.out_weights[i][j] = self.out_weights[i][j]+(2*random.random() -1)
+                weights.append(self.out_weights[i][j])
+        return weights
+
+    def mutate(self):
+        for i in range(self.base_number):
+            for j in range(self.base_number+1):
+                if random.random() <= mutation_probability:
+                    self.base_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+        for i in range(self.hidden_number):
+            for j in range(self.base_number+1):
+                if random.random() <= mutation_probability:
+                    self.hidden_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+        for i in range(self.out_number):
+            for j in range(self.hidden_number+1):
+                if random.random() <= mutation_probability:
+                    self.out_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
 
     def get_alive(self):
         return self.car_alive
@@ -189,13 +202,13 @@ class Car(pygame.sprite.Sprite):
     def random_weights(self):
         for i in range(self.base_number):
             for j in range(self.base_number+1):
-                self.base_weights[i][j] = (2*random.random() -1)
+                self.base_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
         for i in range(self.hidden_number):
             for j in range(self.base_number+1):
-                self.hidden_weights[i][j] = (2*random.random() -1)
+                self.hidden_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
         for i in range(self.out_number):
             for j in range(self.hidden_number+1):
-                self.out_weights[i][j] = (2*random.random() -1)
+                self.out_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
 
     def feedforward(self):
         for i in range(self.base_number):
@@ -213,27 +226,41 @@ class Car(pygame.sprite.Sprite):
             for j in range(self.out_number):
                 self.out_outputs[i] += self.hidden_outputs[j] * self.out_weights[i][j + 1]
             self.out_outputs[i] = 1 / (1 + math.exp(-self.out_outputs[i]))
-            # if self.out_sums[i]>0:
-            #     self.out_sums[i] = 1
-            # else:
-            #     self.out_sums[i] = 0
 
 
 def draw(window):
-    window.blit(CHECKPOINTS,(0,0))
+    window.blit(CHECKPOINTS, (0, 0))
     window.blit(TRACK, (0, 0))
     window.blit(FINISH, FINISH_POS)
     window.blit(TRACK_BORDER, (0, 0))
 
+
+def change_to_multiple_2d_arrays(array):
+    base = numpy.zeros((base_number, base_number+1))
+    hidden = numpy.zeros((hidden_number, base_number+1))
+    out = numpy.zeros((out_number, hidden_number+1))
+    incrementator = 0
+    for i in range(base_number):
+        for j in range(base_number + 1):
+            base[i][j] = array[incrementator]
+            incrementator+=1
+    for i in range(hidden_number):
+        for j in range(base_number + 1):
+            hidden[i][j] = array[incrementator]
+            incrementator+=1
+    for i in range(out_number):
+        for j in range(hidden_number + 1):
+            out[i][j] = array[incrementator]
+            incrementator+=1
+    return base,hidden,out
+
 run = True
 clock = pygame.time.Clock()
 cars = []
-cars_amount = 10
+cars2 = []
+cars3 = []
+cars3_indexes = []
 deads = 0
-best_fitness = 0
-base = numpy.zeros((7, 8))
-hidden = numpy.zeros((5, 8))
-out = numpy.zeros((3, 6))
 for i in range(cars_amount):
     cars.append(Car())
 
@@ -252,18 +279,54 @@ while run:
         car_alive = car.get_alive()
         if not car.get_alive():
             deads+=1
-        if deads == cars_amount:
-            for car in cars:
-                fitness = car.fitness()
-                if fitness >= best_fitness:
-                    best_fitness = fitness
-                    base, hidden, out = car.get_weights()
-            cars.clear()
-            for i in range(cars_amount):
-                car = Car(base, hidden, out)
-                car.mutate(0.2)
-                cars.append(car)
+    if deads == cars_amount:
+        rand1 = random.sample(range(0,cars_amount), cars_amount)
+        rand2 = random.sample(range(0,cars_amount), cars_amount)
+        for i in range(len(rand1)):
+            if (i%2==0):
+                car_fitness1 = cars[rand1[i]].fitness()
+                car_fitness2 = cars[rand1[i+1]].fitness()
+                car_fitness3 = cars[rand2[i]].fitness()
+                car_fitness4 = cars[rand2[i+1]].fitness()
+                if car_fitness1>car_fitness2:
+                    cars2.append(cars[rand1[i]])
+                else:
+                    cars2.append(cars[rand1[i+1]])
+                if car_fitness3>car_fitness4:
+                    cars2.append(cars[rand2[i]])
+                else:
+                    cars2.append(cars[rand2[i+1]])
+        for i in range(len(cars2)):
+            if random.random() >= cross_probability:
+                cars3.append(cars2[i])
+                cars3_indexes.append(i)
+        if len(cars3)>=2:
+            if len(cars3)%2==1:
+                cars3.pop()
+                cars3_indexes.pop()
+            rand3 = random.sample(range(0,len(cars3)), len(cars3))
+            for i in range(len(cars3)):
+                if (i%2==0):
+                    rand_cross = random.randrange(0,weights_amount)
+                    car_weights1 = cars3[rand3[i]].get_weights()
+                    car_weights2 = cars3[rand3[i+1]].get_weights()
+                    car_subweight1 = car_weights1[rand_cross:]
+                    car_subweight2 = car_weights2[rand_cross:]
+                    car_weights1[rand_cross:] = car_subweight2
+                    car_weights2[rand_cross:] = car_subweight1
+                    cars3[rand3[i]].set_weights(*change_to_multiple_2d_arrays(car_weights1))
+                    cars3[rand3[i+1]].set_weights(*change_to_multiple_2d_arrays(car_weights2))
+            for i in range(len(cars3)):
+                cars2[cars3_indexes[i]] = cars3[i]
+        for i in range(len(cars2)):
+            cars2[i].mutate()
+        for i in range(cars_amount):
+            cars[i] = Car()
+            cars[i].set_weights(*change_to_multiple_2d_arrays(cars2[i].get_weights()))
+
+    cars2 = []
+    cars3 = []
+    cars3_indexes = []
     deads = 0
-    best_fitness = 0
     pygame.display.update()
 pygame.quit()
