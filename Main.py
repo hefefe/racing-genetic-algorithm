@@ -33,6 +33,8 @@ mutation_probability = 1/weights_amount * 2
 gene_min_value = -5
 gene_max_value = 5
 time_to_death = 60
+
+
 class Car(pygame.sprite.Sprite):
     START_POS = (490, 620)
 
@@ -56,8 +58,13 @@ class Car(pygame.sprite.Sprite):
         self.hidden_number = hidden_number
         self.out_number = out_number
         self.time_alive = 0
-        self.i = True
-        self.brain()
+        self.multiple_intersections = True
+        self.base_weights = numpy.zeros((self.base_number, self.base_number + 1))
+        self.hidden_weights = numpy.zeros((self.hidden_number, self.base_number + 1))
+        self.out_weights = numpy.zeros((self.out_number, self.hidden_number + 1))
+        self.base_outputs = numpy.zeros(self.base_number)
+        self.hidden_outputs = numpy.zeros(self.hidden_number)
+        self.out_outputs = numpy.zeros(self.out_number)
         self.random_weights()
         self.car_alive = True
 
@@ -66,30 +73,25 @@ class Car(pygame.sprite.Sprite):
         self.more_radars()
         self.movement()
         self.feedforward()
-        if self.points >=1:
-            self.time_alive +=  self.vel * self.multiplier
+        if self.points >= 1:
+            self.time_alive += self.vel * self.multiplier
         self.ticks += 1/10
         if self.ticks > time_to_death or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
-        if self.collision(CHECKPOINTS_MASK, 0,0) is not None:
-            if self.i==True:
+        if self.collision(CHECKPOINTS_MASK, 0, 0) is not None:
+            if self.multiple_intersections:
                 self.add_point(1)
-                self.i=False
+                self.multiple_intersections = False
         else:
-            self.i=True
+            self.multiple_intersections = True
+
     def rotate(self):
-        # if left:
-            self.angle += self.rotation_vel * self.out_outputs[1] * self.multiplier
-        # elif right:
-            self.angle -= self.rotation_vel * self.out_outputs[2] * self.multiplier
+        self.angle += self.rotation_vel * self.out_outputs[1] * self.multiplier
+        self.angle -= self.rotation_vel * self.out_outputs[2] * self.multiplier
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration * self.out_outputs[0], self.max_vel) * self.multiplier
         self.move()
-
-    # def move_backwards(self):
-    #     self.vel = max(self.vel - self.acceleration*self.out_sums[1], -1 * self.max_vel / 2)*self.multiplier
-    #     self.move()
 
     def move(self):
         radians = math.radians(self.angle)
@@ -116,8 +118,8 @@ class Car(pygame.sprite.Sprite):
         self.points += amount * self.multiplier
 
     def movement(self):
-            self.rotate()
-            self.move_forward()
+        self.rotate()
+        self.move_forward()
 
     def stop(self):
         self.multiplier = 0
@@ -135,11 +137,8 @@ class Car(pygame.sprite.Sprite):
                 y = int(self.new_rect.center[1] - math.sin(math.radians(self.angle + radar_angle)) * length)
         except:
             print("")
-        # pygame.draw.line(WINDOW, (255, 255, 255, 255), self.new_rect.center, (x, y), 1)
-        if (150-length)/100 <= 0:
-            return (150-length)/100
-        else:
-            return 1
+
+        return (150-length)/100
 
     def more_radars(self):
         self.radars = [self.radar(-90), self.radar(-60), self.radar(-30), self.radar(0), self.radar(30), self.radar(60),
@@ -162,7 +161,7 @@ class Car(pygame.sprite.Sprite):
                 self.out_weights[i][j] = out[i][j]
 
     def get_weights(self):
-        weights=[]
+        weights = []
         for i in range(self.base_number):
             for j in range(self.base_number+1):
                 weights.append(self.base_weights[i][j])
@@ -178,37 +177,29 @@ class Car(pygame.sprite.Sprite):
         for i in range(self.base_number):
             for j in range(self.base_number+1):
                 if random.random() <= mutation_probability:
-                    self.base_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+                    self.base_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
         for i in range(self.hidden_number):
             for j in range(self.base_number+1):
                 if random.random() <= mutation_probability:
-                    self.hidden_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+                    self.hidden_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
         for i in range(self.out_number):
             for j in range(self.hidden_number+1):
                 if random.random() <= mutation_probability:
-                    self.out_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+                    self.out_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
 
     def get_alive(self):
         return self.car_alive
 
-    def brain(self):
-        self.base_weights = numpy.zeros((self.base_number,self.base_number+1))
-        self.hidden_weights = numpy.zeros((self.hidden_number,self.base_number+1))
-        self.out_weights = numpy.zeros((self.out_number, self.hidden_number+1))
-        self.base_outputs = numpy.zeros(self.base_number)
-        self.hidden_outputs = numpy.zeros(self.hidden_number)
-        self.out_outputs= numpy.zeros(self.out_number)
-
     def random_weights(self):
         for i in range(self.base_number):
             for j in range(self.base_number+1):
-                self.base_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+                self.base_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
         for i in range(self.hidden_number):
             for j in range(self.base_number+1):
-                self.hidden_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+                self.hidden_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
         for i in range(self.out_number):
             for j in range(self.hidden_number+1):
-                self.out_weights[i][j] = random.randrange(gene_min_value,gene_max_value+1)
+                self.out_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
 
     def feedforward(self):
         for i in range(self.base_number):
@@ -243,16 +234,17 @@ def change_to_multiple_2d_arrays(array):
     for i in range(base_number):
         for j in range(base_number + 1):
             base[i][j] = array[incrementator]
-            incrementator+=1
+            incrementator += 1
     for i in range(hidden_number):
         for j in range(base_number + 1):
             hidden[i][j] = array[incrementator]
-            incrementator+=1
+            incrementator += 1
     for i in range(out_number):
         for j in range(hidden_number + 1):
             out[i][j] = array[incrementator]
-            incrementator+=1
-    return base,hidden,out
+            incrementator += 1
+    return base, hidden, out
+
 
 run = True
 clock = pygame.time.Clock()
@@ -260,15 +252,12 @@ cars = []
 cars2 = []
 cars3 = []
 cars3_indexes = []
-car_new_weights1 = []
-car_new_weights2 = []
+deads = 0
 best_fitness = 0
 best_weights = []
-deads = 0
 for i in range(cars_amount):
     cars.append(Car())
 
-i = True
 while run:
     clock.tick(FPS)
     draw(WINDOW)
@@ -282,26 +271,26 @@ while run:
         car.draw(WINDOW)
         car_alive = car.get_alive()
         if not car.get_alive():
-            deads+=1
+            deads += 1
     if deads == cars_amount:
         for car in cars:
             fitness = car.fitness()
             if best_fitness < fitness:
                 best_fitness = car.fitness()
                 best_weights = car.get_weights()
-        rand1 = random.sample(range(0,cars_amount), cars_amount)
-        rand2 = random.sample(range(0,cars_amount), cars_amount)
+        rand1 = random.sample(range(0, cars_amount), cars_amount)
+        rand2 = random.sample(range(0, cars_amount), cars_amount)
         for i in range(len(rand1)):
-            if (i%2==0):
+            if i % 2 == 0:
                 car_fitness1 = cars[rand1[i]].fitness()
                 car_fitness2 = cars[rand1[i+1]].fitness()
                 car_fitness3 = cars[rand2[i]].fitness()
                 car_fitness4 = cars[rand2[i+1]].fitness()
-                if car_fitness1>=car_fitness2:
+                if car_fitness1 >= car_fitness2:
                     cars2.append(cars[rand1[i]])
                 else:
                     cars2.append(cars[rand1[i+1]])
-                if car_fitness3>=car_fitness4:
+                if car_fitness3 >= car_fitness4:
                     cars2.append(cars[rand2[i]])
                 else:
                     cars2.append(cars[rand2[i+1]])
@@ -309,29 +298,14 @@ while run:
             if random.random() <= cross_probability:
                 cars3.append(cars2[i])
                 cars3_indexes.append(i)
-        if len(cars3)>=2:
-            if len(cars3)%2==1:
+        if len(cars3) >= 2:
+            if len(cars3) % 2 == 1:
                 cars3.pop()
                 cars3_indexes.pop()
-            rand3 = random.sample(range(0,len(cars3)), len(cars3))
+            rand3 = random.sample(range(0, len(cars3)), len(cars3))
             for i in range(len(cars3)):
-                # car_new_weights1 = []
-                # car_new_weights2 = []
-                # if (i%2==0):
-                    # car_weights1 = cars3[rand3[i]].get_weights()
-                    # car_weights2 = cars3[rand3[i+1]].get_weights()
-                    # for j in range(weights_amount):
-                    #     rand_gene = random.random()
-                    #     if rand_gene>0.5:
-                    #         car_new_weights1.append(car_weights1[j])
-                    #         car_new_weights2.append(car_weights2[j])
-                    #     else:
-                    #         car_new_weights1.append(car_weights2[j])
-                    #         car_new_weights2.append(car_weights1[j])
-                    # cars3[rand3[i]].set_weights(*change_to_multiple_2d_arrays(car_new_weights1))
-                    # cars3[rand3[i+1]].set_weights(*change_to_multiple_2d_arrays(car_new_weights2))
-                if (i % 2 == 0):
-                    rand_cross = random.randrange(0,weights_amount)
+                if i % 2 == 0:
+                    rand_cross = random.randrange(0, weights_amount)
                     car_weights1 = cars3[rand3[i]].get_weights()
                     car_weights2 = cars3[rand3[i+1]].get_weights()
                     car_subweight1 = car_weights1[rand_cross:]
@@ -347,15 +321,12 @@ while run:
         for i in range(cars_amount):
             cars[i] = Car()
             cars[i].set_weights(*change_to_multiple_2d_arrays(cars2[i].get_weights()))
-        rand = random.randrange(0,cars_amount)
+        rand = random.randrange(0, cars_amount)
         cars[rand].set_weights(*change_to_multiple_2d_arrays(best_weights))
-
 
     cars2 = []
     cars3 = []
     cars3_indexes = []
-    car_new_weights1 = []
-    car_new_weights2 = []
     deads = 0
     pygame.display.update()
 pygame.quit()
