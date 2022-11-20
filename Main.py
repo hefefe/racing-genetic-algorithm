@@ -30,8 +30,8 @@ out_number = 3
 weights_amount = base_number*(base_number+1)+hidden_number*(base_number+1)+out_number*(hidden_number+1)
 cross_probability = 0.7
 mutation_probability = 1/weights_amount * 2
-gene_min_value = -5
-gene_max_value = 5
+gene_min_value = -10
+gene_max_value = 10
 time_to_death = 60
 
 
@@ -136,10 +136,11 @@ class Car(pygame.sprite.Sprite):
                 x = int(self.new_rect.center[0] + math.cos(math.radians(self.angle + radar_angle)) * length)
                 y = int(self.new_rect.center[1] - math.sin(math.radians(self.angle + radar_angle)) * length)
         except:
-            print("")
-
-        return (150-length)/100
-
+            pass
+        if (150-length)/100 < 1:
+            return (150-length)/100
+        else:
+            return 1
     def more_radars(self):
         self.radars = [self.radar(-90), self.radar(-60), self.radar(-30), self.radar(0), self.radar(30), self.radar(60),
                        self.radar(90)]
