@@ -1,3 +1,5 @@
+import time
+
 import pygame
 import numpy
 import math
@@ -67,6 +69,7 @@ class Car(pygame.sprite.Sprite):
         self.out_outputs = numpy.zeros(self.out_number)
         self.random_weights()
         self.car_alive = True
+        self.radars = numpy.arange(base_number)
 
     def draw(self, window):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
@@ -142,8 +145,8 @@ class Car(pygame.sprite.Sprite):
         else:
             return 1
     def more_radars(self):
-        self.radars = [self.radar(-90), self.radar(-60), self.radar(-30), self.radar(0), self.radar(30), self.radar(60),
-                       self.radar(90)]
+        for i in range(len(self.radars)):
+            self.radars[i] = self.radar(-90+(180/(base_number-1))*i)
 
     def fitness(self):
         fitness_score = self.points*10 + self.time_alive
@@ -210,12 +213,12 @@ class Car(pygame.sprite.Sprite):
             self.base_outputs[i] = 1 / (1 + math.exp(-self.base_outputs[i]))
         for i in range(self.hidden_number):
             self.hidden_outputs[i] += self.hidden_weights[i][0]
-            for j in range(self.hidden_number):
+            for j in range(self.base_number):
                 self.hidden_outputs[i] += self.base_outputs[j] * self.hidden_weights[i][j + 1]
             self.hidden_outputs[i] = 1 / (1 + math.exp(-self.hidden_outputs[i]))
         for i in range(self.out_number):
             self.out_outputs[i] += self.out_weights[i][0]
-            for j in range(self.out_number):
+            for j in range(self.hidden_number):
                 self.out_outputs[i] += self.hidden_outputs[j] * self.out_weights[i][j + 1]
             self.out_outputs[i] = 1 / (1 + math.exp(-self.out_outputs[i]))
 
@@ -322,9 +325,9 @@ while run:
         for i in range(cars_amount):
             cars[i] = Car()
             cars[i].set_weights(*change_to_multiple_2d_arrays(cars2[i].get_weights()))
+        # dodawanie globalnie najlepszego do puli, można usunąć
         rand = random.randrange(0, cars_amount)
         cars[rand].set_weights(*change_to_multiple_2d_arrays(best_weights))
-
     cars2 = []
     cars3 = []
     cars3_indexes = []
