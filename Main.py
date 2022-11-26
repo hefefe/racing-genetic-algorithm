@@ -1,5 +1,3 @@
-import time
-
 import pygame
 import numpy
 import math
@@ -34,7 +32,8 @@ cross_probability = 0.7
 mutation_probability = 1/weights_amount * 2
 gene_min_value = -10
 gene_max_value = 10
-time_to_death = 60
+time_to_death = 40
+mutation_power = 0.2
 
 
 class Car(pygame.sprite.Sprite):
@@ -76,15 +75,19 @@ class Car(pygame.sprite.Sprite):
         self.more_radars()
         self.movement()
         self.feedforward()
-        if self.points >= 1:
+        if self.points >= 0:
             self.time_alive += self.vel * self.multiplier
         self.ticks += 1/10
         if self.ticks > time_to_death or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
         if self.collision(CHECKPOINTS_MASK, 0, 0) is not None:
             if self.multiple_intersections:
-                self.add_point(1)
-                self.multiple_intersections = False
+                if self.collision(CHECKPOINTS_MASK, 0, 0) == 397:
+                    self.add_point(-999999)
+                    self.multiple_intersections = False
+                else:
+                    self.add_point(1)
+                    self.multiple_intersections = False
         else:
             self.multiple_intersections = True
 
@@ -179,17 +182,38 @@ class Car(pygame.sprite.Sprite):
 
     def mutate(self):
         for i in range(self.base_number):
-            for j in range(self.base_number+1):
+            for j in range(self.base_number + 1):
                 if random.random() <= mutation_probability:
-                    self.base_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
+                    if random.random() <= 0.5:
+                        self.base_weights[i][j] = self.base_weights[i][j] + self.base_weights[i][j] * mutation_power
+                    else:
+                        self.base_weights[i][j] = self.base_weights[i][j] - self.base_weights[i][j] * mutation_power
+                    if self.base_weights[i][j] > gene_max_value:
+                        self.base_weights[i][j] = gene_max_value
+                    elif self.base_weights[i][j] < gene_min_value:
+                        self.base_weights[i][j] = gene_min_value
         for i in range(self.hidden_number):
-            for j in range(self.base_number+1):
+            for j in range(self.base_number + 1):
                 if random.random() <= mutation_probability:
-                    self.hidden_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
+                    if random.random() <= 0.5:
+                        self.hidden_weights[i][j] = self.hidden_weights[i][j] + self.hidden_weights[i][j] * mutation_power
+                    else:
+                        self.hidden_weights[i][j] = self.hidden_weights[i][j] - self.hidden_weights[i][j] * mutation_power
+                    if self.hidden_weights[i][j] > gene_max_value:
+                        self.hidden_weights[i][j] = gene_max_value
+                    elif self.hidden_weights[i][j] < gene_min_value:
+                        self.hidden_weights[i][j] = gene_min_value
         for i in range(self.out_number):
-            for j in range(self.hidden_number+1):
+            for j in range(self.hidden_number + 1):
                 if random.random() <= mutation_probability:
-                    self.out_weights[i][j] = random.randrange(gene_min_value, gene_max_value+1)
+                    if random.random() <= 0.5:
+                        self.out_weights[i][j] = self.out_weights[i][j] + self.out_weights[i][j] * mutation_power
+                    else:
+                        self.out_weights[i][j] = self.out_weights[i][j] - self.out_weights[i][j] * mutation_power
+                    if self.out_weights[i][j] > gene_max_value:
+                        self.out_weights[i][j] = gene_max_value
+                    elif self.out_weights[i][j] < gene_min_value:
+                        self.out_weights[i][j] = gene_min_value
 
     def get_alive(self):
         return self.car_alive
@@ -280,7 +304,7 @@ while run:
         for car in cars:
             fitness = car.fitness()
             if best_fitness < fitness:
-                best_fitness = car.fitness()
+                best_fitness = fitness
                 best_weights = car.get_weights()
         rand1 = random.sample(range(0, cars_amount), cars_amount)
         rand2 = random.sample(range(0, cars_amount), cars_amount)
