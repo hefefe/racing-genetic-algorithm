@@ -82,12 +82,8 @@ class Car(pygame.sprite.Sprite):
             self.stop()
         if self.collision(CHECKPOINTS_MASK, 0, 0) is not None:
             if self.multiple_intersections:
-                if self.collision(CHECKPOINTS_MASK, 0, 0) == 397:
-                    self.add_point(-999999)
-                    self.multiple_intersections = False
-                else:
-                    self.add_point(1)
-                    self.multiple_intersections = False
+                self.add_point(1)
+                self.multiple_intersections = False
         else:
             self.multiple_intersections = True
 
