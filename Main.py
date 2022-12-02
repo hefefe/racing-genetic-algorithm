@@ -80,7 +80,7 @@ class Car(pygame.sprite.Sprite):
         if self.points >= 0:
             self.time_alive += self.vel * self.multiplier
         self.ticks += 1/10
-        if self.ticks > time_to_death or car.collision(TRACK_BORDER_MASK) is not None:
+        if self.ticks > time_to_death or self.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
         self.checkpoints_finish_collision()
 
