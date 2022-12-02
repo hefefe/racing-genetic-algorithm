@@ -12,6 +12,7 @@ TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 CAR = resize(pygame.image.load("img/autkoMINI.png"), 0.65, 0.65)
 
 FINISH = resize(pygame.image.load("img/meta.png"), 0.45, 0.49)
+FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POS = (490, 580)
 
 CHECKPOINTS = resize(pygame.image.load("img/linie.png"), 0.55, 0.55)
@@ -37,7 +38,7 @@ mutation_power = 0.2
 
 
 class Car(pygame.sprite.Sprite):
-    START_POS = (490, 620)
+    START_POS = (550, 620)
 
     def __init__(self):
         super().__init__()
@@ -53,6 +54,7 @@ class Car(pygame.sprite.Sprite):
         self.x, self.y = self.START_POS
         self.acceleration = 0.3
         self.points = 0
+        self.lap = 0
         self.rect = self.img.get_rect(topleft=(self.x, self.y))
         self.multiplier = 1
         self.base_number = base_number
@@ -80,12 +82,7 @@ class Car(pygame.sprite.Sprite):
         self.ticks += 1/10
         if self.ticks > time_to_death or car.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
-        if self.collision(CHECKPOINTS_MASK, 0, 0) is not None:
-            if self.multiple_intersections:
-                self.add_point(1)
-                self.multiple_intersections = False
-        else:
-            self.multiple_intersections = True
+        self.checkpoints_finish_collision()
 
     def rotate(self):
         self.angle += self.rotation_vel * self.out_outputs[1] * self.multiplier
@@ -116,6 +113,22 @@ class Car(pygame.sprite.Sprite):
         overlap = mask.overlap(car_mask, offset)
         return overlap
 
+    def checkpoints_finish_collision(self):
+        if self.collision(CHECKPOINTS_MASK, 0, 0) is not None:
+            if self.multiple_intersections:
+                self.add_point(1)
+                self.multiple_intersections = False
+        elif self.collision(FINISH_MASK, *FINISH_POS) is not None:
+            if self.multiple_intersections:
+                if self.collision(FINISH_MASK, *FINISH_POS)[0] > 40:
+                    self.add_point(-99999)
+                    self.multiple_intersections = False
+                else:
+                    self.add_point(1)
+                    self.multiple_intersections = False
+        else:
+            self.multiple_intersections = True
+
     def add_point(self, amount):
         self.points += amount * self.multiplier
 
@@ -143,6 +156,7 @@ class Car(pygame.sprite.Sprite):
             return (150-length)/100
         else:
             return 1
+
     def more_radars(self):
         for i in range(len(self.radars)):
             self.radars[i] = self.radar(-90+(180/(base_number-1))*i)
@@ -297,57 +311,60 @@ while run:
         if not car.get_alive():
             deads += 1
     if deads == cars_amount:
-        for car in cars:
-            fitness = car.fitness()
-            if best_fitness < fitness:
-                best_fitness = fitness
-                best_weights = car.get_weights()
-        rand1 = random.sample(range(0, cars_amount), cars_amount)
-        rand2 = random.sample(range(0, cars_amount), cars_amount)
-        for i in range(len(rand1)):
-            if i % 2 == 0:
-                car_fitness1 = cars[rand1[i]].fitness()
-                car_fitness2 = cars[rand1[i+1]].fitness()
-                car_fitness3 = cars[rand2[i]].fitness()
-                car_fitness4 = cars[rand2[i+1]].fitness()
-                if car_fitness1 >= car_fitness2:
-                    cars2.append(cars[rand1[i]])
-                else:
-                    cars2.append(cars[rand1[i+1]])
-                if car_fitness3 >= car_fitness4:
-                    cars2.append(cars[rand2[i]])
-                else:
-                    cars2.append(cars[rand2[i+1]])
-        for i in range(len(cars2)):
-            if random.random() <= cross_probability:
-                cars3.append(cars2[i])
-                cars3_indexes.append(i)
-        if len(cars3) >= 2:
-            if len(cars3) % 2 == 1:
-                cars3.pop()
-                cars3_indexes.pop()
-            rand3 = random.sample(range(0, len(cars3)), len(cars3))
-            for i in range(len(cars3)):
+        if deads >= 2:
+            for car in cars:
+                fitness = car.fitness()
+                if best_fitness < fitness:
+                    best_fitness = fitness
+                    best_weights = car.get_weights()
+            rand1 = random.sample(range(0, cars_amount), cars_amount)
+            rand2 = random.sample(range(0, cars_amount), cars_amount)
+            for i in range(len(rand1)):
                 if i % 2 == 0:
-                    rand_cross = random.randrange(0, weights_amount)
-                    car_weights1 = cars3[rand3[i]].get_weights()
-                    car_weights2 = cars3[rand3[i+1]].get_weights()
-                    car_subweight1 = car_weights1[rand_cross:]
-                    car_subweight2 = car_weights2[rand_cross:]
-                    car_weights1[rand_cross:] = car_subweight2
-                    car_weights2[rand_cross:] = car_subweight1
-                    cars3[rand3[i]].set_weights(*change_to_multiple_2d_arrays(car_weights1))
-                    cars3[rand3[i+1]].set_weights(*change_to_multiple_2d_arrays(car_weights2))
-            for i in range(len(cars3)):
-                cars2[cars3_indexes[i]] = cars3[i]
-        for i in range(len(cars2)):
-            cars2[i].mutate()
-        for i in range(cars_amount):
-            cars[i] = Car()
-            cars[i].set_weights(*change_to_multiple_2d_arrays(cars2[i].get_weights()))
-        # dodawanie globalnie najlepszego do puli, można usunąć
-        rand = random.randrange(0, cars_amount)
-        cars[rand].set_weights(*change_to_multiple_2d_arrays(best_weights))
+                    car_fitness1 = cars[rand1[i]].fitness()
+                    car_fitness2 = cars[rand1[i+1]].fitness()
+                    car_fitness3 = cars[rand2[i]].fitness()
+                    car_fitness4 = cars[rand2[i+1]].fitness()
+                    if car_fitness1 >= car_fitness2:
+                        cars2.append(cars[rand1[i]])
+                    else:
+                        cars2.append(cars[rand1[i+1]])
+                    if car_fitness3 >= car_fitness4:
+                        cars2.append(cars[rand2[i]])
+                    else:
+                        cars2.append(cars[rand2[i+1]])
+            for i in range(len(cars2)):
+                if random.random() <= cross_probability:
+                    cars3.append(cars2[i])
+                    cars3_indexes.append(i)
+            if len(cars3) >= 2:
+                if len(cars3) % 2 == 1:
+                    cars3.pop()
+                    cars3_indexes.pop()
+                rand3 = random.sample(range(0, len(cars3)), len(cars3))
+                for i in range(len(cars3)):
+                    if i % 2 == 0:
+                        rand_cross = random.randrange(0, weights_amount)
+                        car_weights1 = cars3[rand3[i]].get_weights()
+                        car_weights2 = cars3[rand3[i+1]].get_weights()
+                        car_subweight1 = car_weights1[rand_cross:]
+                        car_subweight2 = car_weights2[rand_cross:]
+                        car_weights1[rand_cross:] = car_subweight2
+                        car_weights2[rand_cross:] = car_subweight1
+                        cars3[rand3[i]].set_weights(*change_to_multiple_2d_arrays(car_weights1))
+                        cars3[rand3[i+1]].set_weights(*change_to_multiple_2d_arrays(car_weights2))
+                for i in range(len(cars3)):
+                    cars2[cars3_indexes[i]] = cars3[i]
+            for i in range(len(cars2)):
+                cars2[i].mutate()
+            for i in range(cars_amount):
+                cars[i] = Car()
+                cars[i].set_weights(*change_to_multiple_2d_arrays(cars2[i].get_weights()))
+            rand = random.randrange(0, cars_amount)
+            cars[rand].set_weights(*change_to_multiple_2d_arrays(best_weights))
+        else:
+            for i in range(cars_amount):
+                cars[i] = Car()
     cars2 = []
     cars3 = []
     cars3_indexes = []
