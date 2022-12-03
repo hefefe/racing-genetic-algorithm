@@ -77,8 +77,7 @@ class Car(pygame.sprite.Sprite):
         self.more_radars()
         self.movement()
         self.feedforward()
-        if self.points >= 0:
-            self.time_alive += self.vel * self.multiplier
+        self.time_alive += self.vel * self.multiplier
         self.ticks += 1/10
         if self.ticks > time_to_death or self.collision(TRACK_BORDER_MASK) is not None:
             self.stop()
@@ -89,8 +88,11 @@ class Car(pygame.sprite.Sprite):
         self.angle -= self.rotation_vel * self.out_outputs[2] * self.multiplier
 
     def move_forward(self):
-        self.vel = min(self.vel + self.acceleration * self.out_outputs[0], self.max_vel) * self.multiplier
-        self.move()
+        if self.out_outputs[0] > 0.5:
+            self.vel = min(self.vel + self.acceleration * self.out_outputs[0], self.max_vel) * self.multiplier
+            self.move()
+        else:
+            self.reduce_speed()
 
     def move(self):
         radians = math.radians(self.angle)
@@ -101,10 +103,10 @@ class Car(pygame.sprite.Sprite):
 
     def reduce_speed(self):
         if self.vel > 0:
-            self.vel = max(self.vel - self.acceleration / 2, 0)
+            self.vel = max(self.vel - self.acceleration / 2, 0) * self.multiplier
             self.move()
         else:
-            self.vel = min(self.vel + self.acceleration / 2, 0)
+            self.vel = min(self.vel + self.acceleration / 2, 0) * self.multiplier
             self.move()
 
     def collision(self, mask, x=0, y=0):
@@ -347,10 +349,10 @@ while run:
                         rand_cross = random.randrange(0, weights_amount)
                         car_weights1 = cars3[rand3[i]].get_weights()
                         car_weights2 = cars3[rand3[i+1]].get_weights()
-                        car_subweight1 = car_weights1[rand_cross:]
-                        car_subweight2 = car_weights2[rand_cross:]
-                        car_weights1[rand_cross:] = car_subweight2
-                        car_weights2[rand_cross:] = car_subweight1
+                        car_sub_weight1 = car_weights1[rand_cross:]
+                        car_sub_weight2 = car_weights2[rand_cross:]
+                        car_weights1[rand_cross:] = car_sub_weight2
+                        car_weights2[rand_cross:] = car_sub_weight1
                         cars3[rand3[i]].set_weights(*change_to_multiple_2d_arrays(car_weights1))
                         cars3[rand3[i+1]].set_weights(*change_to_multiple_2d_arrays(car_weights2))
                 for i in range(len(cars3)):
