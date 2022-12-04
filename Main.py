@@ -71,6 +71,7 @@ class Car(pygame.sprite.Sprite):
         self.random_weights()
         self.car_alive = True
         self.radars = numpy.arange(base_number)
+        self.fitness_score = 0
 
     def draw(self, window):
         self.new_rect, self.rotated_image = rotate_center(window, self.img, (self.x, self.y), self.angle)
@@ -164,8 +165,8 @@ class Car(pygame.sprite.Sprite):
             self.radars[i] = self.radar(-90+(180/(base_number-1))*i)
 
     def fitness(self):
-        fitness_score = self.points*10 + self.time_alive
-        return fitness_score
+        self.fitness_score = self.points*10 + self.time_alive
+        return self.fitness_score
 
     def set_weights(self, base, hidden, out):
 
