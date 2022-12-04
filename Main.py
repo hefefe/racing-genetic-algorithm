@@ -62,9 +62,9 @@ class Car(pygame.sprite.Sprite):
         self.out_number = out_number
         self.time_alive = 0
         self.multiple_intersections = True
-        self.base_weights = numpy.zeros((self.base_number, self.base_number + 1))
-        self.hidden_weights = numpy.zeros((self.hidden_number, self.base_number + 1))
-        self.out_weights = numpy.zeros((self.out_number, self.hidden_number + 1))
+        self.base_weights = numpy.zeros((self.base_number, self.base_number + 1)).astype(float)
+        self.hidden_weights = numpy.zeros((self.hidden_number, self.base_number + 1)).astype(float)
+        self.out_weights = numpy.zeros((self.out_number, self.hidden_number + 1)).astype(float)
         self.base_outputs = numpy.zeros(self.base_number)
         self.hidden_outputs = numpy.zeros(self.hidden_number)
         self.out_outputs = numpy.zeros(self.out_number)
@@ -268,9 +268,9 @@ def draw(window):
 
 
 def change_to_multiple_2d_arrays(array):
-    base = numpy.zeros((base_number, base_number+1))
-    hidden = numpy.zeros((hidden_number, base_number+1))
-    out = numpy.zeros((out_number, hidden_number+1))
+    base = numpy.zeros((base_number, base_number+1)).astype(float)
+    hidden = numpy.zeros((hidden_number, base_number+1)).astype(float)
+    out = numpy.zeros((out_number, hidden_number+1)).astype(float)
     incrementator = 0
     for i in range(base_number):
         for j in range(base_number + 1):
